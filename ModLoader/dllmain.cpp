@@ -42,7 +42,7 @@ static int32_t Hook_GetDatabinItemSize(int16_t databinItemIdx)
 #ifdef _DEBUG
 	{
 		std::lock_guard<std::mutex> guard(g_coutMutex);
-		std::cout << std::format("Determining file size of file number {:05d}, size: {:d} bytes", databinItemIdx, databinItemSize) << std::endl;
+		std::cout << std::format("{:05d}\tGetFileSize\t{:d} bytes", databinItemIdx, databinItemSize) << std::endl;
 	}
 #endif
 
@@ -56,13 +56,6 @@ static LOADDATABINITEM LoadDatabinItem;
 //	This function loads a file from the databin archive. We let the game do this 
 static int64_t Hook_LoadDatabinItem(int64_t param_1, uint64_t databinItemIdx, uint64_t param_3)
 {
-#ifdef _DEBUG
-	{
-		std::lock_guard<std::mutex> guard(g_coutMutex);
-		std::cout << std::format("Load file number {:05d}", databinItemIdx) << std::endl;
-	}
-#endif
-
 	// The purpose of the return value is currently unknown. It does not look like the game uses it though anyway.
 	int64_t returnVal = 0;
 
@@ -70,6 +63,11 @@ static int64_t Hook_LoadDatabinItem(int64_t param_1, uint64_t databinItemIdx, ui
 	std::ifstream modFile(std::format("mods\\{:05d}.dat", databinItemIdx), std::ios::binary);
 	if (modFile)
 	{
+#ifdef _DEBUG
+		std::lock_guard<std::mutex> guard(g_coutMutex);
+		std::cout << std::format("{:05d}\tLoadFile\tmodded", databinItemIdx) << std::endl;
+#endif
+
 		modFile.seekg(0, std::ios::end);
 		int length = modFile.tellg();
 		modFile.seekg(0, std::ios::beg);
@@ -106,16 +104,15 @@ static int64_t Hook_LoadDatabinItem(int64_t param_1, uint64_t databinItemIdx, ui
 		*(patch + 2) = 0x08;
 
 		VirtualProtect(patch, 3, oldProtect, &oldProtect);
-
-#ifdef _DEBUG
-		{
-			std::lock_guard<std::mutex> guard(g_coutMutex);
-			std::cout << "[+] Loaded mod for aforementioned file." << std::endl;
-		}
-#endif
 	}
 	else
 	{
+#ifdef _DEBUG
+		{
+			std::lock_guard<std::mutex> guard(g_coutMutex);
+			std::cout << std::format("{:05d}\tLoadFile", databinItemIdx) << std::endl;
+		}
+#endif
 		returnVal = LoadDatabinItem(param_1, databinItemIdx, param_3);
 	}
 	
