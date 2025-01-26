@@ -17,26 +17,36 @@ static void ConsoleSetup(FILE*& fOUT, FILE*& fERR, FILE*& fIN)
 #endif
 
 
+uintptr_t g_moduleBase;
+
+
 typedef int32_t(__fastcall* GETDATABINITEMSIZE)(int16_t databinItemIdx);
 static GETDATABINITEMSIZE GetDatabinItemSize;
 
 //	This function usually gets the size of a file stored in a databin from the databin itself. For mod files instead we need to determine the size on the disk every time it is needed, since the mod could change.
 static int32_t Hook_GetDatabinItemSize(int16_t databinItemIdx)
 {
-#ifdef _DEBUG
-	{
-		std::lock_guard<std::mutex> guard(g_coutMutex);
-		std::cout << std::format("Determining file size of file number {:05d}", databinItemIdx) << std::endl;
-	}
-#endif
+	int32_t databinItemSize = 0;
 
 	std::ifstream modFile(std::format("mods\\{:05d}.dat", databinItemIdx), std::ios::binary);
 	if (modFile)
 	{
 		modFile.seekg(0, std::ios::end);
-		return modFile.tellg();
+		databinItemSize = modFile.tellg();
 	}
-	return GetDatabinItemSize(databinItemIdx);
+	else
+	{
+		databinItemSize = GetDatabinItemSize(databinItemIdx);
+	}
+
+#ifdef _DEBUG
+	{
+		std::lock_guard<std::mutex> guard(g_coutMutex);
+		std::cout << std::format("Determining file size of file number {:05d}, size: {:d} bytes", databinItemIdx, databinItemSize) << std::endl;
+	}
+#endif
+
+	return databinItemSize;
 }
 
 
@@ -65,7 +75,38 @@ static int64_t Hook_LoadDatabinItem(int64_t param_1, uint64_t databinItemIdx, ui
 		modFile.seekg(0, std::ios::beg);
 		modFile.read((char*)param_3, length);
 		modFile.close();
-		
+
+
+		//	We need to patch this calling operation, it reads the file from databin and decompresses it, but we already have the file in place.
+		char* patch = (char*)(g_moduleBase + 0x147382B);
+
+		DWORD oldProtect;
+		VirtualProtect(patch, 3, PAGE_EXECUTE_READWRITE, &oldProtect);
+
+		//	mov al,1		(simulate the "return true" which we would have gotten from the patched out function)
+		*(patch + 0) = 0xB0;
+		*(patch + 1) = 0x01;
+
+		//	nop
+		*(patch + 2) = 0x90;
+
+		VirtualProtect(patch, 3, oldProtect, &oldProtect);
+
+
+		//	Call the original function that loads a databin item, it will perform everything normally except for the function which we just patched out.
+		returnVal = LoadDatabinItem(param_1, databinItemIdx, param_3);
+
+
+		//	Return the patched function call to how it was before for loading files the normal way.
+		VirtualProtect(patch, 3, PAGE_EXECUTE_READWRITE, &oldProtect);
+
+		//	call qword ptr [rax+08]
+		*(patch + 0) = 0xFF;
+		*(patch + 1) = 0x50;
+		*(patch + 2) = 0x08;
+
+		VirtualProtect(patch, 3, oldProtect, &oldProtect);
+
 #ifdef _DEBUG
 		{
 			std::lock_guard<std::mutex> guard(g_coutMutex);
@@ -77,7 +118,7 @@ static int64_t Hook_LoadDatabinItem(int64_t param_1, uint64_t databinItemIdx, ui
 	{
 		returnVal = LoadDatabinItem(param_1, databinItemIdx, param_3);
 	}
-
+	
 	return returnVal;
 }
 
@@ -92,11 +133,11 @@ DWORD WINAPI HackThread(HMODULE hModule)
 #endif
 
 	//	gamemodule.dll is the underlying NG Sigma 2 instance, which is responsible for loading the databin archive.
-	uintptr_t moduleBase = (uintptr_t)GetModuleHandle(L"gamemodule.dll");
+	g_moduleBase = (uintptr_t)GetModuleHandle(L"gamemodule.dll");
 
 	//	Original code addresses which we need to detour.
-	LoadDatabinItem		= (LOADDATABINITEM)	(moduleBase + 0x14736d0);
-	GetDatabinItemSize	= (GETDATABINITEMSIZE)(moduleBase + 0x1471990);
+	LoadDatabinItem		= (LOADDATABINITEM)	(g_moduleBase + 0x14736d0);
+	GetDatabinItemSize	= (GETDATABINITEMSIZE)(g_moduleBase + 0x1471990);
 	
 	//	Detour GetDatabinItemSize
 	DetourTransactionBegin();
