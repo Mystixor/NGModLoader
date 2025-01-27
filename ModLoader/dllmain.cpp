@@ -1,5 +1,31 @@
 #include "pch.h"
 
+#include "d3d11.h"
+
+
+D3D11CreateDevice_t Original_D3D11CreateDevice = nullptr;
+
+//	Exported function that redirects to the respective function of the real d3d11.dll
+__declspec(dllexport) HRESULT D3D11CreateDevice(
+	IDXGIAdapter* pAdapter,
+	D3D_DRIVER_TYPE         DriverType,
+	HMODULE                 Software,
+	UINT                    Flags,
+	const D3D_FEATURE_LEVEL* pFeatureLevels,
+	UINT                    FeatureLevels,
+	UINT                    SDKVersion,
+	ID3D11Device** ppDevice,
+	D3D_FEATURE_LEVEL* pFeatureLevel,
+	ID3D11DeviceContext** ppImmediateContext
+)
+{
+	if (Original_D3D11CreateDevice)
+	{
+		return Original_D3D11CreateDevice(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, ppDevice, pFeatureLevel, ppImmediateContext);
+	}
+	return S_FALSE;
+}
+
 
 #ifdef _DEBUG
 //	Mutex to make sure std::cout never prints twice at the same time.
@@ -122,6 +148,23 @@ static int64_t Hook_LoadDatabinItem(int64_t param_1, uint64_t databinItemIdx, ui
 
 DWORD WINAPI HackThread(HMODULE hModule)
 {
+	//	Get the path to the real d3d11.dll in the system directories and load it
+	char dllName[MAX_PATH];
+	GetSystemDirectoryA(dllName, MAX_PATH);
+	strcat_s(dllName, "\\d3d11.dll");
+	HMODULE dll = LoadLibraryA(dllName);
+
+	if (dll > (HMODULE)31)
+	{
+		Original_D3D11CreateDevice = (D3D11CreateDevice_t)GetProcAddress(dll, "D3D11CreateDevice");
+	}
+	else
+	{
+		FreeLibraryAndExitThread(hModule, 0);
+		return 0;
+	}
+
+
 #ifdef _DEBUG
 	FILE* fOUT;
 	FILE* fERR;
