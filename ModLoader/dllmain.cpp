@@ -199,8 +199,7 @@ DWORD WINAPI HackThread(HMODULE hModule)
 
 	//	Attach all DLL mods
 	Sleep(1000);
-	std::string path = "mods\\";
-	for (const auto& entry : std::filesystem::directory_iterator(path))
+	for (const auto& entry : std::filesystem::directory_iterator("mods\\bin\\"))
 	{
 		if (entry.is_directory())
 		{
