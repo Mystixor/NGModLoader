@@ -196,6 +196,39 @@ DWORD WINAPI HackThread(HMODULE hModule)
 	ConsoleSetup(fOUT, fERR, fIN);
 #endif
 
+
+	//	Attach all DLL mods
+	Sleep(1000);
+	std::string path = "mods\\";
+	for (const auto& entry : std::filesystem::directory_iterator(path))
+	{
+		if (entry.is_directory())
+		{
+			std::string dllPath = (entry.path() / "main.dll").string();
+
+			if (std::filesystem::exists(dllPath))
+			{
+#ifdef _DEBUG
+				std::cout << "Attaching mod " << entry.path().filename() << "...";
+#endif
+
+				HMODULE modDLL = LoadLibraryA(dllPath.c_str());
+
+#ifdef _DEBUG
+				if (modDLL > (HMODULE)31)
+				{
+					std::cout << "\tsuccessful" << std::endl;
+				}
+				else
+				{
+					std::cout << "\tfailed" << std::endl;
+				}
+#endif
+			}
+		}
+	}
+
+
 	//	gamemodule.dll is the underlying NG Sigma 2 instance, which is responsible for loading the databin archive.
 	g_moduleBase = (uintptr_t)GetModuleHandle(L"gamemodule.dll");
 
