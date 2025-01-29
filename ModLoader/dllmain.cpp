@@ -50,7 +50,7 @@ __declspec(dllexport) HRESULT D3D11CreateDeviceAndSwapChain(
 }
 
 
-#ifdef _DEBUG
+#ifdef ML_DEBUG
 //	Mutex to make sure std::cout never prints twice at the same time.
 std::mutex g_coutMutex;
 
@@ -88,7 +88,7 @@ static int32_t Hook_GetDatabinItemSize(int16_t databinItemIdx)
 		databinItemSize = GetDatabinItemSize(databinItemIdx);
 	}
 
-#ifdef _DEBUG
+#ifdef ML_DEBUG
 	{
 		std::lock_guard<std::mutex> guard(g_coutMutex);
 		std::cout << std::format("{:05d}\tGetFileSize\t{:d} bytes", databinItemIdx, databinItemSize) << std::endl;
@@ -112,7 +112,7 @@ static int64_t Hook_LoadDatabinItem(int64_t param_1, uint64_t databinItemIdx, ui
 	std::ifstream modFile(std::format("mods\\{:05d}.dat", databinItemIdx), std::ios::binary);
 	if (modFile)
 	{
-#ifdef _DEBUG
+#ifdef ML_DEBUG
 		std::lock_guard<std::mutex> guard(g_coutMutex);
 		std::cout << std::format("{:05d}\tLoadFile\tmodded", databinItemIdx) << std::endl;
 #endif
@@ -156,7 +156,7 @@ static int64_t Hook_LoadDatabinItem(int64_t param_1, uint64_t databinItemIdx, ui
 	}
 	else
 	{
-#ifdef _DEBUG
+#ifdef ML_DEBUG
 		{
 			std::lock_guard<std::mutex> guard(g_coutMutex);
 			std::cout << std::format("{:05d}\tLoadFile", databinItemIdx) << std::endl;
@@ -189,7 +189,7 @@ DWORD WINAPI HackThread(HMODULE hModule)
 	}
 
 
-#ifdef _DEBUG
+#ifdef ML_DEBUG
 	FILE* fOUT;
 	FILE* fERR;
 	FILE* fIN;
@@ -207,13 +207,13 @@ DWORD WINAPI HackThread(HMODULE hModule)
 
 			if (std::filesystem::exists(dllPath))
 			{
-#ifdef _DEBUG
+#ifdef ML_DEBUG
 				std::cout << "Attaching mod " << entry.path().filename() << "...";
 #endif
 
 				HMODULE modDLL = LoadLibraryA(dllPath.c_str());
 
-#ifdef _DEBUG
+#ifdef ML_DEBUG
 				if (modDLL > (HMODULE)31)
 				{
 					std::cout << "\tsuccessful" << std::endl;
