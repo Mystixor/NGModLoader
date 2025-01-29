@@ -1,50 +1,43 @@
 #include "pch.h"
 
-#include "d3d11.h"
+#include "d3d9.h"
 
 
-D3D11CreateDevice_t Original_D3D11CreateDevice = nullptr;
-D3D11CreateDeviceAndSwapChain_t Original_D3D11CreateDeviceAndSwapChain = nullptr;
+Direct3DCreate9Ex_t		Original_Direct3DCreate9Ex	= nullptr;
+D3DPERF_BeginEvent_t	Original_D3DPERF_BeginEvent	= nullptr;
+D3DPERF_EndEvent_t		Original_D3DPERF_EndEvent	= nullptr;
 
-//	Exported function that redirects to the respective function of the real d3d11.dll
-__declspec(dllexport) HRESULT D3D11CreateDevice(
-        IDXGIAdapter*               pAdapter,
-        D3D_DRIVER_TYPE             DriverType,
-        HMODULE                     Software,
-        UINT                        Flags,
-        const D3D_FEATURE_LEVEL*    pFeatureLevels,
-        UINT                        FeatureLevels,
-        UINT                        SDKVersion,
-        ID3D11Device**              ppDevice,
-        D3D_FEATURE_LEVEL*          pFeatureLevel,
-        ID3D11DeviceContext**       ppImmediateContext
+__declspec(dllexport) HRESULT Direct3DCreate9Ex(
+	UINT			SDKVersion,
+	IDirect3D9Ex** unnamedParam2
 )
 {
-	if (Original_D3D11CreateDevice)
+	if (Original_Direct3DCreate9Ex)
 	{
-		return Original_D3D11CreateDevice(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, ppDevice, pFeatureLevel, ppImmediateContext);
+		return Original_Direct3DCreate9Ex(SDKVersion, unnamedParam2);
 	}
 	return S_FALSE;
 }
 
-__declspec(dllexport) HRESULT D3D11CreateDeviceAndSwapChain(
-        IDXGIAdapter*               pAdapter,
-        D3D_DRIVER_TYPE             DriverType,
-        HMODULE                     Software,
-        UINT                        Flags,
-        const D3D_FEATURE_LEVEL*    pFeatureLevels,
-        UINT                        FeatureLevels,
-        UINT                        SDKVersion,
-        const DXGI_SWAP_CHAIN_DESC* pSwapChainDesc,
-        IDXGISwapChain**            ppSwapChain,
-        ID3D11Device**              ppDevice,
-        D3D_FEATURE_LEVEL*          pFeatureLevel,
-        ID3D11DeviceContext**       ppImmediateContext
+__declspec(dllexport) int D3DPERF_BeginEvent(
+	D3DCOLOR col,
+	LPCWSTR wszName
 )
 {
-	if (Original_D3D11CreateDeviceAndSwapChain)
+	if (Original_D3DPERF_BeginEvent)
 	{
-		return Original_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
+		return Original_D3DPERF_BeginEvent(col, wszName);
+	}
+	return S_FALSE;
+}
+
+__declspec(dllexport) int D3DPERF_EndEvent(
+	void
+)
+{
+	if (Original_D3DPERF_EndEvent)
+	{
+		return Original_D3DPERF_EndEvent();
 	}
 	return S_FALSE;
 }
@@ -169,18 +162,19 @@ static int64_t Hook_LoadDatabinItem(int64_t param_1, uint64_t databinItemIdx, ui
 }
 
 
-DWORD WINAPI HackThread(HMODULE hModule)
+static DWORD WINAPI HackThread(HMODULE hModule)
 {
 	//	Get the path to the real d3d11.dll in the system directories and load it
 	char dllName[MAX_PATH];
 	GetSystemDirectoryA(dllName, MAX_PATH);
-	strcat_s(dllName, "\\d3d11.dll");
+	strcat_s(dllName, "\\d3d9.dll");
 	HMODULE dll = LoadLibraryA(dllName);
 
 	if (dll > (HMODULE)31)
 	{
-		Original_D3D11CreateDevice				= (D3D11CreateDevice_t)				GetProcAddress(dll, "D3D11CreateDevice");
-		Original_D3D11CreateDeviceAndSwapChain	= (D3D11CreateDeviceAndSwapChain_t)	GetProcAddress(dll, "D3D11CreateDeviceAndSwapChain");
+		Original_Direct3DCreate9Ex	= (Direct3DCreate9Ex_t)		GetProcAddress(dll, "Direct3DCreate9Ex");
+		Original_D3DPERF_BeginEvent	= (D3DPERF_BeginEvent_t)	GetProcAddress(dll, "D3DPERF_BeginEvent");
+		Original_D3DPERF_EndEvent	= (D3DPERF_EndEvent_t)		GetProcAddress(dll, "D3DPERF_EndEvent");
 	}
 	else
 	{
