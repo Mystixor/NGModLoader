@@ -349,37 +349,6 @@ static DWORD WINAPI HackThread(HMODULE hModule)
 #endif
 
 
-	//	Attach all DLL mods
-	Sleep(1000);
-	for (const auto& entry : std::filesystem::directory_iterator("mods\\bin\\"))
-	{
-		if (entry.is_directory())
-		{
-			std::string dllPath = (entry.path() / "main.dll").string();
-
-			if (std::filesystem::exists(dllPath))
-			{
-#ifdef ML_DEBUG
-				std::cout << "Attaching mod " << entry.path().filename() << "...";
-#endif
-
-				HMODULE modDLL = LoadLibraryA(dllPath.c_str());
-
-#ifdef ML_DEBUG
-				if (modDLL > (HMODULE)31)
-				{
-					std::cout << "\tsuccessful" << std::endl;
-				}
-				else
-				{
-					std::cout << "\tfailed" << std::endl;
-				}
-#endif
-			}
-		}
-	}
-
-
 	//	gamemodule.dll is the underlying NG Sigma 2 instance, which is responsible for loading the databin archive.
 	g_moduleBase = (uintptr_t)GetModuleHandle(L"gamemodule.dll");
 
@@ -398,6 +367,69 @@ static DWORD WINAPI HackThread(HMODULE hModule)
 	DetourUpdateThread(GetCurrentThread());
 	DetourAttach(&(LPVOID&)LoadDatabinItem, (PBYTE)Hook_LoadDatabinItem);
 	DetourTransactionCommit();
+
+
+	//	Attach all DLL mods
+	bool modBinFound = false;
+	std::filesystem::directory_iterator modBin_DirIt;
+	for (int i = 0; i < 100; i++)
+	{
+		//	We try to find the "mods\bin\" directory 100 times, 100 milliseconds apart each.
+		//	Trying more than once is necessary due to directory_iterator() failing close to application startup.
+		//	Not trying infinitely is necessary because not all users would even have a "bin" folder.
+		try
+		{
+			modBin_DirIt = std::filesystem::directory_iterator("mods\\bin\\");
+			modBinFound = true;
+			break;
+		}
+		catch (std::filesystem::filesystem_error e)
+		{
+			Sleep(100);
+		}
+	}
+
+	if (modBinFound)
+	{
+#ifdef ML_DEBUG
+		std::cout << "\"mods\\bin\\\" directory found. Searching for DLL mods to attach." << std::endl;
+#endif
+
+		for (const auto& entry : modBin_DirIt)
+		{
+			if (entry.is_directory())
+			{
+				std::string dllPath = (entry.path() / "main.dll").string();
+
+				if (std::filesystem::exists(dllPath))
+				{
+#ifdef ML_DEBUG
+					std::cout << "Attaching mod " << entry.path().filename() << "...";
+#endif
+
+					HMODULE modDLL = LoadLibraryA(dllPath.c_str());
+
+#ifdef ML_DEBUG
+					if (modDLL > (HMODULE)31)
+					{
+						std::cout << "\tsuccessful" << std::endl;
+					}
+					else
+					{
+						std::cout << "\tfailed" << std::endl;
+					}
+#endif
+				}
+			}
+		}
+	}
+	else
+	{
+#ifdef ML_DEBUG
+		std::cout << "\"mods\\bin\\\" directory not found within 10 seconds. No DLL mods will be attached." << std::endl;
+#endif
+	}
+
 
 	while (true)
 	{
