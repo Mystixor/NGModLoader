@@ -3,21 +3,21 @@
 #include "d3d9.h"
 
 
-Direct3DCreate9Ex_t		Original_Direct3DCreate9Ex	= nullptr;
-D3DPERF_BeginEvent_t	Original_D3DPERF_BeginEvent	= nullptr;
-D3DPERF_EndEvent_t		Original_D3DPERF_EndEvent	= nullptr;
-
-__declspec(dllexport) HRESULT Direct3DCreate9Ex(
-	UINT			SDKVersion,
-	IDirect3D9Ex** unnamedParam2
-)
-{
-	if (Original_Direct3DCreate9Ex)
-	{
-		return Original_Direct3DCreate9Ex(SDKVersion, unnamedParam2);
-	}
-	return S_FALSE;
-}
+D3DPERF_BeginEvent_t						Original_D3DPERF_BeginEvent							= nullptr;
+D3DPERF_EndEvent_t							Original_D3DPERF_EndEvent							= nullptr;
+D3DPERF_GetStatus_t							Original_D3DPERF_GetStatus							= nullptr;
+D3DPERF_QueryRepeatFrame_t					Original_D3DPERF_QueryRepeatFrame					= nullptr;
+D3DPERF_SetMarker_t							Original_D3DPERF_SetMarker							= nullptr;
+D3DPERF_SetOptions_t						Original_D3DPERF_SetOptions							= nullptr;
+D3DPERF_SetRegion_t							Original_D3DPERF_SetRegion							= nullptr;
+DebugSetLevel_t								Original_DebugSetLevel								= nullptr;
+DebugSetMute_t								Original_DebugSetMute								= nullptr;
+Direct3D9EnableMaximizedWindowedModeShim_t	Original_Direct3D9EnableMaximizedWindowedModeShim	= nullptr;
+Direct3DCreate9_t							Original_Direct3DCreate9							= nullptr;
+Direct3DCreate9Ex_t							Original_Direct3DCreate9Ex							= nullptr;
+Direct3DShaderValidatorCreate9_t			Original_Direct3DShaderValidatorCreate9				= nullptr;
+PSGPError_t									Original_PSGPError									= nullptr;
+PSGPSampleTexture_t							Original_PSGPSampleTexture							= nullptr;
 
 __declspec(dllexport) int D3DPERF_BeginEvent(
 	D3DCOLOR col,
@@ -38,6 +38,152 @@ __declspec(dllexport) int D3DPERF_EndEvent(
 	if (Original_D3DPERF_EndEvent)
 	{
 		return Original_D3DPERF_EndEvent();
+	}
+	return S_FALSE;
+}
+
+__declspec(dllexport) DWORD WINAPI D3DPERF_GetStatus(
+	void
+)
+{
+	if (Original_D3DPERF_GetStatus)
+	{
+		return Original_D3DPERF_GetStatus();
+	}
+	return NULL;
+}
+
+__declspec(dllexport) DWORD WINAPI D3DPERF_QueryRepeatFrame(
+	void
+)
+{
+	if (Original_D3DPERF_QueryRepeatFrame)
+	{
+		return Original_D3DPERF_QueryRepeatFrame();
+	}
+	return NULL;
+}
+
+__declspec(dllexport) void WINAPI D3DPERF_SetMarker(
+	D3DCOLOR col,
+	LPCWSTR wszName
+)
+{
+	if (Original_D3DPERF_SetMarker)
+	{
+		return Original_D3DPERF_SetMarker(col, wszName);
+	}
+	return;
+}
+
+__declspec(dllexport) int WINAPI D3DPERF_SetOptions(
+	DWORD dwOptions
+)
+{
+	if (Original_D3DPERF_SetOptions)
+	{
+		return Original_D3DPERF_SetOptions(dwOptions);
+	}
+	return NULL;
+}
+
+__declspec(dllexport) void WINAPI D3DPERF_SetRegion(
+	D3DCOLOR col,
+	LPCWSTR wszName
+)
+{
+	if (Original_D3DPERF_SetRegion)
+	{
+		return Original_D3DPERF_SetRegion(col, wszName);
+	}
+	return;
+}
+
+__declspec(dllexport) HRESULT WINAPI DebugSetLevel(
+	DWORD dw1
+)
+{
+	if (Original_DebugSetLevel)
+	{
+		return Original_DebugSetLevel(dw1);
+	}
+	return S_FALSE;
+}
+
+__declspec(dllexport) void DebugSetMute(
+	void
+)
+{
+	if (Original_DebugSetMute)
+	{
+		return Original_DebugSetMute();
+	}
+	return;
+}
+
+__declspec(dllexport) int WINAPI Direct3D9EnableMaximizedWindowedModeShim(
+	BOOL mEnable
+)
+{
+	if (Original_Direct3D9EnableMaximizedWindowedModeShim)
+	{
+		return Original_Direct3D9EnableMaximizedWindowedModeShim(mEnable);
+	}
+	return NULL;
+}
+
+__declspec(dllexport) IDirect3D9* WINAPI Direct3DCreate9(
+	UINT SDKVersion
+)
+{
+	if (Original_Direct3DCreate9)
+	{
+		return Original_Direct3DCreate9(SDKVersion);
+	}
+	return nullptr;
+}
+
+__declspec(dllexport) HRESULT Direct3DCreate9Ex(
+	UINT			SDKVersion,
+	IDirect3D9Ex** unnamedParam2
+)
+{
+	if (Original_Direct3DCreate9Ex)
+	{
+		return Original_Direct3DCreate9Ex(SDKVersion, unnamedParam2);
+	}
+	return S_FALSE;
+}
+
+__declspec(dllexport) void Direct3DShaderValidatorCreate9(
+	void
+)
+{
+	if (Original_Direct3DShaderValidatorCreate9)
+	{
+		return Original_Direct3DShaderValidatorCreate9();
+	}
+	return;
+}
+
+__declspec(dllexport) HRESULT WINAPI PSGPError(
+	void
+)
+{
+	if (Original_PSGPError)
+	{
+		return Original_PSGPError();
+	}
+	return S_FALSE;
+}
+
+__declspec(dllexport) HRESULT WINAPI PSGPSampleTexture(
+	void
+)
+{
+	if (Original_PSGPSampleTexture)
+	{
+		return Original_PSGPSampleTexture();
 	}
 	return S_FALSE;
 }
@@ -172,9 +318,21 @@ static DWORD WINAPI HackThread(HMODULE hModule)
 
 	if (dll > (HMODULE)31)
 	{
-		Original_Direct3DCreate9Ex	= (Direct3DCreate9Ex_t)		GetProcAddress(dll, "Direct3DCreate9Ex");
-		Original_D3DPERF_BeginEvent	= (D3DPERF_BeginEvent_t)	GetProcAddress(dll, "D3DPERF_BeginEvent");
-		Original_D3DPERF_EndEvent	= (D3DPERF_EndEvent_t)		GetProcAddress(dll, "D3DPERF_EndEvent");
+		Original_D3DPERF_BeginEvent							= (D3DPERF_BeginEvent_t)						GetProcAddress(dll, "D3DPERF_BeginEvent");
+		Original_D3DPERF_EndEvent							= (D3DPERF_EndEvent_t)							GetProcAddress(dll, "D3DPERF_EndEvent");
+		Original_D3DPERF_GetStatus							= (D3DPERF_GetStatus_t)							GetProcAddress(dll, "D3DPERF_GetStatus");
+		Original_D3DPERF_QueryRepeatFrame					= (D3DPERF_QueryRepeatFrame_t)					GetProcAddress(dll, "D3DPERF_QueryRepeatFrame");
+		Original_D3DPERF_SetMarker							= (D3DPERF_SetMarker_t)							GetProcAddress(dll, "D3DPERF_SetMarker");
+		Original_D3DPERF_SetOptions							= (D3DPERF_SetOptions_t)						GetProcAddress(dll, "D3DPERF_SetOptions");
+		Original_D3DPERF_SetRegion							= (D3DPERF_SetRegion_t)							GetProcAddress(dll, "D3DPERF_SetRegion");
+		Original_DebugSetLevel								= (DebugSetLevel_t)								GetProcAddress(dll, "DebugSetLevel");
+		Original_DebugSetMute								= (DebugSetMute_t)								GetProcAddress(dll, "DebugSetMute");
+		Original_Direct3D9EnableMaximizedWindowedModeShim	= (Direct3D9EnableMaximizedWindowedModeShim_t)	GetProcAddress(dll, "Direct3D9EnableMaximizedWindowedModeShim");
+		Original_Direct3DCreate9							= (Direct3DCreate9_t)							GetProcAddress(dll, "Direct3DCreate9");
+		Original_Direct3DCreate9Ex							= (Direct3DCreate9Ex_t)							GetProcAddress(dll, "Direct3DCreate9Ex");
+		Original_Direct3DShaderValidatorCreate9				= (Direct3DShaderValidatorCreate9_t)			GetProcAddress(dll, "Direct3DShaderValidatorCreate9");
+		Original_PSGPError									= (PSGPError_t)									GetProcAddress(dll, "PSGPError");
+		Original_PSGPSampleTexture							= (PSGPSampleTexture_t)							GetProcAddress(dll, "PSGPSampleTexture");
 	}
 	else
 	{
