@@ -10,6 +10,7 @@ The author of this repository has no affiliation with Team Ninja or Koei Tecmo a
 1. Put `d3d11.dll` in the directory `NINJAGAIDEN2BLACK\NINJAGAIDEN2BLACK\Binaries\Win64\`.
 2. Create a folder `mods` in the directory `NINJAGAIDEN2BLACK\NINJAGAIDEN2BLACK\Binaries\Win64\`.
 3. Put your modded files into the `mods` folder. Mods must follow the naming scheme of e.g. `00004.dat` or `07655.dat` (five-digit number, padded with zeros, `.dat` extension).
+4. Create a folder `bin` inside the `mods` folder. This is where DLL-based mods can be put, which will then be injected on game startup. The directory layout is `mods\bin\[MOD NAME]\main.dll`.
 
 The Mod Loader will now automatically activate when you launch the game, to disable it simply remove `d3d11.dll` from the game directory and restart the game.
 
