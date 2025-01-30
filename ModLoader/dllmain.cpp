@@ -399,6 +399,7 @@ static DWORD WINAPI HackThread(HMODULE hModule)
 		{
 			if (entry.is_directory())
 			{
+				//	Load DLL mod sub-directory
 				std::string dllPath = (entry.path() / "main.dll").string();
 
 				if (std::filesystem::exists(dllPath))
@@ -420,6 +421,28 @@ static DWORD WINAPI HackThread(HMODULE hModule)
 					}
 #endif
 				}
+			}
+			else
+			{
+				//	Load single DLL mod
+				std::string dllPath = entry.path().string();
+
+#ifdef ML_DEBUG
+				std::cout << "Attaching mod " << entry.path().filename() << "...";
+#endif
+
+				HMODULE modDLL = LoadLibraryA(dllPath.c_str());
+
+#ifdef ML_DEBUG
+				if (modDLL > (HMODULE)31)
+				{
+					std::cout << "\tsuccessful" << std::endl;
+				}
+				else
+				{
+					std::cout << "\tfailed" << std::endl;
+				}
+#endif
 			}
 		}
 	}
