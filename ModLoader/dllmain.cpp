@@ -3,6 +3,11 @@
 #include "d3d9.h"
 
 
+//#define v1060
+
+#define v1070
+
+
 D3DPERF_BeginEvent_t						Original_D3DPERF_BeginEvent							= nullptr;
 D3DPERF_EndEvent_t							Original_D3DPERF_EndEvent							= nullptr;
 D3DPERF_GetStatus_t							Original_D3DPERF_GetStatus							= nullptr;
@@ -264,7 +269,12 @@ static int64_t Hook_LoadDatabinItem(int64_t param_1, uint64_t databinItemIdx, ui
 
 
 		//	We need to patch this calling operation, it reads the file from databin and decompresses it, but we already have the file in place.
+#ifdef v1060
 		char* patch = (char*)(g_moduleBase + 0x147382B);
+#endif
+#ifdef v1070
+		char* patch = (char*)(g_moduleBase + 0x147413b);
+#endif
 
 		DWORD oldProtect;
 		VirtualProtect(patch, 3, PAGE_EXECUTE_READWRITE, &oldProtect);
@@ -353,8 +363,14 @@ static DWORD WINAPI HackThread(HMODULE hModule)
 	g_moduleBase = (uintptr_t)GetModuleHandle(L"gamemodule.dll");
 
 	//	Original code addresses which we need to detour.
+#ifdef v1060
 	LoadDatabinItem		= (LOADDATABINITEM)	(g_moduleBase + 0x14736d0);
 	GetDatabinItemSize	= (GETDATABINITEMSIZE)(g_moduleBase + 0x1471990);
+#endif
+#ifdef v1070
+	LoadDatabinItem		= (LOADDATABINITEM)	(g_moduleBase + 0x1473fe0);
+	GetDatabinItemSize	= (GETDATABINITEMSIZE)(g_moduleBase + 0x14722a0);
+#endif
 	
 	//	Detour GetDatabinItemSize
 	DetourTransactionBegin();
